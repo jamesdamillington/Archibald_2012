@@ -1,8 +1,9 @@
 import numpy as np
+import pylandstats as pls
 
 NON_FLAMMABLE = -1
 UNBURNT = 0
-BURNING = 1 
+BURNING = 1
 BURNT = 2
 
 class FireModel:
@@ -13,25 +14,23 @@ class FireModel:
         self.p_spread = p_spread
         self.rho = rho
         self.grid = self.initialize_grid()
+        self.initial_grid = self.grid.copy()  # Store initial grid for initial measures
+        self.time = 0
 
     def initialize_grid(self):
-        # Cells are flammable with probability rho, otherwise non-flammable
+        # Flammable with probability rho, else non-flammable
         flammable = np.random.rand(self.grid_size, self.grid_size) < self.rho
         grid = np.full((self.grid_size, self.grid_size), NON_FLAMMABLE, dtype=int)
         grid[flammable] = UNBURNT
         return grid
 
-    def step(self):
-        self.ignite()
-        self.spread_fire()
-        self.update_grid()
-
     def ignite(self):
+        mask = self.grid == UNBURNT
         natural = np.random.rand(*self.grid.shape) < self.p_natural_ignition
         human = np.random.rand(*self.grid.shape) < self.p_human_ignition
-        ignition = (natural | human) & (self.grid == UNBURNT)
+        ignition = (natural | human) & mask
         self.grid[ignition] = BURNING
-   
+
     def spread_fire(self):
         new_burning = np.zeros_like(self.grid, dtype=bool)
         for x in range(self.grid.shape[0]):
@@ -43,12 +42,66 @@ class FireModel:
                             if self.grid[nx, ny] == UNBURNT and np.random.rand() < self.p_spread:
                                 new_burning[nx, ny] = True
         self.grid[new_burning] = BURNING
-  
-    def update_grid(self):
+
+    def update_burnt(self):
         self.grid[self.grid == BURNING] = BURNT
 
-    def reset(self):
-        self.grid.fill(UNBURNT)
+    def step(self):
+        self.ignite()
+        self.spread_fire()
+        self.update_burnt()
+        self.time += 1
+
+    def run_simulation(self, steps):
+        for _ in range(steps):
+            self.step()
 
     def get_grid(self):
-        return self.grid.copy()
+        return self.grid
+
+    # ---- Initial State Measures using pylandstats ----
+    def calculate_initial_flammable_fraction(self):
+        flammable = (self.initial_grid != NON_FLAMMABLE)
+        total_cells = self.initial_grid.size
+        return np.sum(flammable) / total_cells if total_cells > 0 else 0.0
+
+    def calculate_initial_num_flammable_clusters(self):
+        # pylandstats expects classes as integers, so flammable = 1, non-flammable = 0
+        flammable_mask = (self.initial_grid != NON_FLAMMABLE).astype(int)
+        ls = pls.Landscape(flammable_mask)
+        return ls.class_patch_count[1] if 1 in ls.class_patch_count else 0
+
+    def get_initial_measures(self):
+        return {
+            "initial_flammable_fraction": self.calculate_initial_flammable_fraction(),
+            "initial_num_flammable_clusters": self.calculate_initial_num_flammable_clusters()
+        }
+
+    # ---- Final State Measures using pylandstats ----
+    def calculate_burned_fraction(self):
+        flammable = (self.grid != NON_FLAMMABLE)
+        burnt = (self.grid == BURNT)
+        if np.sum(flammable) == 0:
+            return 0.0
+        return np.sum(burnt) / np.sum(flammable)
+
+    def calculate_num_fires(self):
+        # pylandstats expects classes as integers, so burnt = 1, else 0
+        burnt_mask = (self.grid == BURNT).astype(int)
+        ls = pls.Landscape(burnt_mask)
+        return ls.class_patch_count[1] if 1 in ls.class_patch_count else 0
+
+    def calculate_mean_fire_size(self):
+        burnt_mask = (self.grid == BURNT).astype(int)
+        ls = pls.Landscape(burnt_mask)
+        if 1 in ls.class_mean_patch_area:
+            return float(ls.class_mean_patch_area[1])
+        else:
+            return 0.0
+
+    def get_measures(self):
+        return {
+            "burned_fraction": self.calculate_burned_fraction(),
+            "num_fires": self.calculate_num_fires(),
+            "mean_fire_size": self.calculate_mean_fire_size()
+        }
