@@ -5,8 +5,8 @@ from fire_model import FireModel
 PARAMS_FILE = "../data/params.csv"
 RESULTS_FILE = "../results/results.csv"
 
-def run_simulation(grid_size, p_natural_ignition, p_human_ignition, p_spread, steps):
-    model = FireModel(grid_size, p_natural_ignition, p_human_ignition, p_spread)
+def run_simulation(grid_size, p_natural_ignition, p_human_ignition, p_spread, rho, steps):
+    model = FireModel(grid_size, p_natural_ignition, p_human_ignition, p_spread, rho)
     for _ in range(steps):
         model.step()
     burnt_fraction = np.mean(model.get_grid() == 2)  # 2 == BURNT
@@ -22,10 +22,11 @@ def batch_run_from_file(params_file, results_file):
             p_natural_ignition = float(row['p_natural_ignition'])
             p_human_ignition = float(row['p_human_ignition'])
             p_spread = float(row['p_spread'])
+            rho = float(row['rho'])
             n_repeats = int(row.get('n_repeats', 1))
             for repeat in range(n_repeats):
                 burnt_fraction = run_simulation(
-                    grid_size, p_natural_ignition, p_human_ignition, p_spread, steps
+                    grid_size, p_natural_ignition, p_human_ignition, p_spread, rho, steps
                 )
                 result = {
                     'grid_size': grid_size,
@@ -33,6 +34,7 @@ def batch_run_from_file(params_file, results_file):
                     'p_natural_ignition': p_natural_ignition,
                     'p_human_ignition': p_human_ignition,
                     'p_spread': p_spread,
+                    'rho': rho,
                     'repeat': repeat,
                     'burnt_fraction': burnt_fraction
                 }
