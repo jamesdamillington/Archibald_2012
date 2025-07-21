@@ -2,8 +2,8 @@ import csv
 import numpy as np
 from fire_model import FireModel
 
-PARAMS_FILE = "params.csv"
-RESULTS_FILE = "results.csv"
+PARAMS_FILE = "../data/params.csv"
+RESULTS_FILE = "../results/results.csv"
 
 def run_simulation(grid_size, p_natural_ignition, p_human_ignition, p_spread, steps):
     model = FireModel(grid_size, p_natural_ignition, p_human_ignition, p_spread)
