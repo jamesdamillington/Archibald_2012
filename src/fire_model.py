@@ -70,7 +70,7 @@ class FireModel:
         flammable_mask = (self.initial_grid != NON_FLAMMABLE).astype(int)
         ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(1,1))
         df = ls.compute_class_metrics_df(metrics=['number_of_patches'])
-        print(df.columns)
+        #print(df.columns)
         # The 'NP' column is "Number of Patches"
         return int(df['number_of_patches'].values[0])
 
@@ -98,7 +98,7 @@ class FireModel:
         burnt_mask = (self.grid == BURNT).astype(int)
         ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(1,1))
         df = ls.compute_patch_metrics_df(metrics=['area'])
-        print(df.columns)
+        #print(df.columns)
         # Only consider patches of class 1 (burnt)
         fire_areas = df.loc[df['class_val'] == 1, 'area']
         if len(fire_areas) == 0:
