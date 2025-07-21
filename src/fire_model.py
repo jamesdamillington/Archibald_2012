@@ -68,8 +68,11 @@ class FireModel:
     def calculate_initial_num_flammable_clusters(self):
         # pylandstats expects classes as integers, so flammable = 1, non-flammable = 0
         flammable_mask = (self.initial_grid != NON_FLAMMABLE).astype(int)
-        ls = pls.Landscape(flammable_mask)
-        return ls.class_patch_count[1] if 1 in ls.class_patch_count else 0
+        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(1,1))
+        df = ls.compute_class_metrics_df(metrics=['number_of_patches'])
+        print(df.columns)
+        # The 'NP' column is "Number of Patches"
+        return int(df['number_of_patches'].values[0])
 
     def get_initial_measures(self):
         return {
@@ -86,22 +89,25 @@ class FireModel:
         return np.sum(burnt) / np.sum(flammable)
 
     def calculate_num_fires(self):
-        # pylandstats expects classes as integers, so burnt = 1, else 0
         burnt_mask = (self.grid == BURNT).astype(int)
-        ls = pls.Landscape(burnt_mask)
-        return ls.class_patch_count[1] if 1 in ls.class_patch_count else 0
+        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(1,1))
+        df = ls.compute_class_metrics_df( metrics=['number_of_patches'])
+        return int(df['number_of_patches'].values[0])
 
-    def calculate_mean_fire_size(self):
+    def calculate_median_fire_size(self):
         burnt_mask = (self.grid == BURNT).astype(int)
-        ls = pls.Landscape(burnt_mask)
-        if 1 in ls.class_mean_patch_area:
-            return float(ls.class_mean_patch_area[1])
-        else:
+        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(1,1))
+        df = ls.compute_patch_metrics_df(metrics=['area'])
+        print(df.columns)
+        # Only consider patches of class 1 (burnt)
+        fire_areas = df.loc[df['class_val'] == 1, 'area']
+        if len(fire_areas) == 0:
             return 0.0
+        return float(np.median(fire_areas))
 
-    def get_measures(self):
+    def get_final_measures(self):
         return {
             "burned_fraction": self.calculate_burned_fraction(),
             "num_fires": self.calculate_num_fires(),
-            "mean_fire_size": self.calculate_mean_fire_size()
+            "median_fire_size": self.calculate_median_fire_size()
         }

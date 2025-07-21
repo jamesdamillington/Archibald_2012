@@ -17,7 +17,7 @@ def run_batch(params_csv, results_csv):
         )
         initial_measures = model.get_initial_measures()
         model.run_simulation(int(params['steps']))
-        final_measures = model.get_measures()
+        final_measures = model.get_final_measures()
         row = {**params, **initial_measures, **final_measures}
         results.append(row)
 
@@ -31,6 +31,6 @@ def run_batch(params_csv, results_csv):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 3:
-        print("Usage: python batch_run_fileio.py params.csv results.csv")
+        print("Usage: python batch_run.py params.csv results.csv")
     else:
         run_batch(sys.argv[1], sys.argv[2])
