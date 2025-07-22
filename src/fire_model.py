@@ -68,50 +68,46 @@ class FireModel:
         return self.grid
 
     # ---- Initial State Measures using pylandstats ----
-    def calculate_initial_flammable_fraction(self):
-        flammable = (self.initial_grid != NON_FLAMMABLE)
-        total_cells = self.initial_grid.size
-        return np.sum(flammable) / total_cells if total_cells > 0 else 0.0
-
-    def calculate_initial_num_flammable_clusters(self):
+    def calc_initial_measures(self):
+        # Calculate initial flammable fraction and clusters efficiently
         flammable_mask = (self.initial_grid != NON_FLAMMABLE).astype(int)
-        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
-        df = ls.compute_class_metrics_df(metrics=['number_of_patches'])
-        return int(df['number_of_patches'].values[0]) if not df.empty else 0
+        total_cells = self.initial_grid.size
+        flammable_fraction = round(np.sum(flammable_mask) / total_cells if total_cells > 0 else 0.0, 4)
 
-    def get_initial_measures(self):
+        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
+        df_class = ls.compute_class_metrics_df(metrics=['number_of_patches'])
+        num_clusters = int(df_class['number_of_patches'].values[0]) if not df_class.empty else 0
+
         return {
-            "initial_flammable_fraction": self.calculate_initial_flammable_fraction(),
-            "initial_num_flammable_clusters": self.calculate_initial_num_flammable_clusters()
+            "initial_flammable_fraction": flammable_fraction,
+            "initial_num_flammable_clusters": num_clusters
         }
 
     # ---- Final State Measures using pylandstats ----
-    def calculate_burned_fraction(self):
-        flammable = (self.grid != NON_FLAMMABLE)
-        burnt = (self.grid == BURNT)
-        if np.sum(flammable) == 0:
-            return 0.0
-        return np.sum(burnt) / np.sum(flammable)
-
-    def calculate_num_fires(self):
+    def calc_final_measures(self):
+        
         burnt_mask = (self.grid == BURNT).astype(int)
-        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
-        df = ls.compute_class_metrics_df(metrics=['number_of_patches'])
-        return int(df['number_of_patches'].values[0]) if not df.empty else 0
+        total_cells = self.initial_grid.size
 
-    def calculate_median_fire_size(self):
-        burnt_mask = (self.grid == BURNT).astype(int)
-        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
-        df = ls.compute_patch_metrics_df(metrics=['area'])
-        # Only consider patches of class 1 (burnt)
-        fire_areas = df.loc[df['class_val'] == 1, 'area'] if 'class_val' in df.columns else []
-        if len(fire_areas) == 0:
-            return 0.0
-        return float(np.median(fire_areas))
+        # Burned fraction of entire landscape
+        burnt_count = np.sum(burnt_mask)
+        burned_fraction = round((burnt_count / total_cells), 4) if burnt_count > 0 else 0.0
 
-    def get_final_measures(self):
+        # Landscape metrics for burnt patches
+        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
+        df_class = ls.compute_class_metrics_df(metrics=['number_of_patches'])
+        num_fires = int(df_class['number_of_patches'].values[0]) if not df_class.empty else 0
+
+        df_patch = ls.compute_patch_metrics_df(metrics=['area'])
+        fire_areas = df_patch.loc[df_patch['class_val'] == 1, 'area'] if 'class_val' in df_patch.columns else []
+        median_fire_size = float(np.median(fire_areas)) if len(fire_areas) > 0 else 0.0
+        max_fire_size = float(np.max(fire_areas)) if len(fire_areas) > 0 else 0.0
+        sd_fire_size = float(np.std(fire_areas)) if len(fire_areas) > 0 else 0.0
+
         return {
-            "burned_fraction": self.calculate_burned_fraction(),
-            "num_fires": self.calculate_num_fires(),
-            "median_fire_size_ha": self.calculate_median_fire_size()
+            "burned_fraction": burned_fraction,
+            "num_fires": num_fires,
+            "median_fire_size_ha": median_fire_size,
+            "max_fire_size_ha": max_fire_size,
+            "sd_fire_size_ha": sd_fire_size
         }
