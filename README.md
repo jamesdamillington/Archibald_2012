@@ -1,4 +1,4 @@
-# Archibald_2012
+# Archibald 2012
 Reproducing the savanna fire simulation model described in Archibald et al. (2011) *PNAS* doi: [10.1073/pnas.1118648109](https://doi.org/10.1073/pnas.1118648109)
 
 _mu_ is ignition frequency, fires km-2 yr-1  (number of ignition events in a landscape)
