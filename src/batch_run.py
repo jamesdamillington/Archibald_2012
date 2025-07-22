@@ -17,8 +17,7 @@ def run_batch(params_csv, results_csv):
             
             model = FireModel(
             int(params['grid_size']),
-            float(params['p_natural_ignition']),
-            float(params['p_human_ignition']),
+            float(params['mu']),
             float(params['p_spread']),
             float(params['rho'])
             )

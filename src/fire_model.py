@@ -7,10 +7,9 @@ BURNING = 1
 BURNT = 2
 
 class FireModel:
-    def __init__(self, grid_size, p_natural_ignition, p_human_ignition, p_spread, rho):
+    def __init__(self, grid_size, mu, p_spread, rho):
         self.grid_size = grid_size
-        self.p_natural_ignition = p_natural_ignition
-        self.p_human_ignition = p_human_ignition
+        self.mu = mu
         self.p_spread = p_spread
         self.rho = rho
         self.grid = self.initialize_grid()
@@ -26,9 +25,7 @@ class FireModel:
 
     def ignite(self):
         mask = self.grid == UNBURNT
-        natural = np.random.rand(*self.grid.shape) < self.p_natural_ignition
-        human = np.random.rand(*self.grid.shape) < self.p_human_ignition
-        ignition = (natural | human) & mask
+        ignition = (np.random.rand(*self.grid.shape) < self.mu) & mask
         self.grid[ignition] = BURNING
 
     def spread_fire(self):
