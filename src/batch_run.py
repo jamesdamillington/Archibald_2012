@@ -17,13 +17,23 @@ def run_batch(params_csv, results_csv):
             
             model = FireModel(
             int(params['grid_size']),
+            int(params['grid_res']),
             float(params['mu']),
             float(params['p_spread']),
             float(params['rho'])
             )
             initial_measures = model.get_initial_measures()
-            model.run_simulation(int(params['steps']))
+            
+            #calculate number of fires
+            grid_area_km = model.grid_size * model.grid_size * model.grid_res ** 2 / 1e6  # Convert sqm to km^2
+            fires_yr = int(float(params['mu']) * grid_area_km)
+            print(fires_yr)
+            print(int(params['years']))
+
+            model.run_simulation(int(params['years']), fires_yr)
+            # Collect final measures
             final_measures = model.get_final_measures()
+            
             row = {**params, **initial_measures, **final_measures}
             results.append(row)
             run_counter += 1

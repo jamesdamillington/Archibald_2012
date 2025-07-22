@@ -7,8 +7,9 @@ BURNING = 1
 BURNT = 2
 
 class FireModel:
-    def __init__(self, grid_size, mu, p_spread, rho):
+    def __init__(self, grid_size, grid_res, mu, p_spread, rho):
         self.grid_size = grid_size
+        self.grid_res = grid_res
         self.mu = mu
         self.p_spread = p_spread
         self.rho = rho
@@ -24,34 +25,44 @@ class FireModel:
         return grid
 
     def ignite(self):
-        mask = self.grid == UNBURNT
-        ignition = (np.random.rand(*self.grid.shape) < self.mu) & mask
-        self.grid[ignition] = BURNING
+        # Find all unburnt cells
+        unburnt_indices = np.argwhere(self.grid == UNBURNT)
+        if len(unburnt_indices) == 0:
+            print("No unburnt cells to ignite.")
+            return
+        # Randomly select one unburnt cell to ignite
+        x, y = unburnt_indices[np.random.choice(len(unburnt_indices))]
+        self.grid[x, y] = BURNING
 
     def spread_fire(self):
         new_burning = np.zeros_like(self.grid, dtype=bool)
-        for x in range(self.grid.shape[0]):
-            for y in range(self.grid.shape[1]):
-                if self.grid[x, y] == BURNING:
-                    for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
-                        nx, ny = x + dx, y + dy
-                        if 0 <= nx < self.grid.shape[0] and 0 <= ny < self.grid.shape[1]:
-                            if self.grid[nx, ny] == UNBURNT and np.random.rand() < self.p_spread:
-                                new_burning[nx, ny] = True
+        burning_indices = np.argwhere(self.grid == BURNING)
+        for x, y in burning_indices:
+            for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < self.grid.shape[0] and 0 <= ny < self.grid.shape[1]:
+                    if self.grid[nx, ny] == UNBURNT and np.random.rand() < self.p_spread:
+                        new_burning[nx, ny] = True
         self.grid[new_burning] = BURNING
 
-    def update_burnt(self):
-        self.grid[self.grid == BURNING] = BURNT
+    def step_fire(self):
+        if not np.any(self.grid == BURNING):
+            self.ignite()
+        while np.any(self.grid == BURNING):
+            burning_indices = np.argwhere(self.grid == BURNING)
+            self.spread_fire()
+            # Only set cells that were burning before the spread to BURNT
+            for x, y in burning_indices:
+                self.grid[x, y] = BURNT
 
-    def step(self):
-        self.ignite()
-        self.spread_fire()
-        self.update_burnt()
+    def step_year(self, fires):
+        for _ in range(fires):
+            self.step_fire()
         self.time += 1
 
-    def run_simulation(self, steps):
-        for _ in range(steps):
-            self.step()
+    def run_simulation(self, years, fires_yr):
+        for _ in range(years):
+            self.step_year(fires=fires_yr)
 
     def get_grid(self):
         return self.grid
@@ -63,13 +74,10 @@ class FireModel:
         return np.sum(flammable) / total_cells if total_cells > 0 else 0.0
 
     def calculate_initial_num_flammable_clusters(self):
-        # pylandstats expects classes as integers, so flammable = 1, non-flammable = 0
         flammable_mask = (self.initial_grid != NON_FLAMMABLE).astype(int)
-        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(1,1))
+        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
         df = ls.compute_class_metrics_df(metrics=['number_of_patches'])
-        #print(df.columns)
-        # The 'NP' column is "Number of Patches"
-        return int(df['number_of_patches'].values[0])
+        return int(df['number_of_patches'].values[0]) if not df.empty else 0
 
     def get_initial_measures(self):
         return {
@@ -87,17 +95,16 @@ class FireModel:
 
     def calculate_num_fires(self):
         burnt_mask = (self.grid == BURNT).astype(int)
-        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(1,1))
-        df = ls.compute_class_metrics_df( metrics=['number_of_patches'])
-        return int(df['number_of_patches'].values[0])
+        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
+        df = ls.compute_class_metrics_df(metrics=['number_of_patches'])
+        return int(df['number_of_patches'].values[0]) if not df.empty else 0
 
     def calculate_median_fire_size(self):
         burnt_mask = (self.grid == BURNT).astype(int)
-        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(1,1))
+        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
         df = ls.compute_patch_metrics_df(metrics=['area'])
-        #print(df.columns)
         # Only consider patches of class 1 (burnt)
-        fire_areas = df.loc[df['class_val'] == 1, 'area']
+        fire_areas = df.loc[df['class_val'] == 1, 'area'] if 'class_val' in df.columns else []
         if len(fire_areas) == 0:
             return 0.0
         return float(np.median(fire_areas))
@@ -106,5 +113,5 @@ class FireModel:
         return {
             "burned_fraction": self.calculate_burned_fraction(),
             "num_fires": self.calculate_num_fires(),
-            "median_fire_size": self.calculate_median_fire_size()
+            "median_fire_size_ha": self.calculate_median_fire_size()
         }
