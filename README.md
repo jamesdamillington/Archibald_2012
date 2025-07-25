@@ -1,6 +1,7 @@
 # Archibald 2012
 Reproducing the savanna fire simulation model described in Archibald et al. (2011) *PNAS* doi: [10.1073/pnas.1118648109](https://doi.org/10.1073/pnas.1118648109)
 
+## Original Model
 _mu_ is ignition frequency, fires km-2 yr-1  (number of ignition events in a landscape)
 _rho_ is initial probability that a cell is flammable
 *p_spread* is probability of fire spreading from one cell to an adjacent cell
@@ -22,10 +23,18 @@ Results match Fig 1 in Archibald _et al._ (2012):
 ## Additions
 
 ### Roads
-The `add_linear_nonflammable` function add 'roads' (linear rows of non-flammable cells) to introduce fuel discontinuities. This shows how the original Archibald *et al.* results can be modified. 
+The `add_linear_nonflammable` function add 'roads' (linear rows of non-flammable cells) to introduce fuel discontinuities. This shows how the original Archibald *et al.* results can be modified (note: next two figs are for *grid_size* == 101). 
 
 - Adding _two_ roads to create _four_ equal size areas where vegetation can grow results in different relationships for low mu (ignition rate) but not otherwise:
 ![alt text](results/fig2_grid101_cross.png)
 
 - Adding _four_ roads to create _nine_ equal size areas where vegetation can grow results in different relationships for low and intermediate mu (ignition rate) but not high:
 ![alt text](results/fig2_grid101_fourlines.png)
+
+### Contagion
+Code to calculate the CONTAGION landscape metric has been added but not yet analysed
+
+### Fields
+To do: allow initial flammable cells to be non-randomly located, and rather clustered to better represent real-world landscpes
+
+To do: examine classes of vegetation with differentiated spread probabilities (and ignition rates?)
