@@ -74,13 +74,17 @@ class FireModel:
         total_cells = self.initial_grid.size
         flammable_fraction = round(np.sum(flammable_mask) / total_cells if total_cells > 0 else 0.0, 4)
 
-        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
+        ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res), nodata=-99)
         df_class = ls.compute_class_metrics_df(metrics=['number_of_patches'])
         num_clusters = int(df_class['number_of_patches'].values[0]) if not df_class.empty else 0
+        
+        df_lsp = ls.compute_landscape_metrics_df(metrics=['contagion'])
+        contag = float(df_lsp['contagion'].values[0]) if not df_lsp.empty else 0.0
 
         return {
             "initial_flammable_fraction": flammable_fraction,
-            "initial_num_flammable_clusters": num_clusters
+            "initial_num_flammable_clusters": num_clusters,
+            "initial_contagion": contag
         }
 
     # ---- Final State Measures using pylandstats ----
@@ -94,7 +98,7 @@ class FireModel:
         burned_fraction = round((burnt_count / total_cells), 4) if burnt_count > 0 else 0.0
 
         # Landscape metrics for burnt patches
-        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res))
+        ls = pls.Landscape(burnt_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res), nodata=-99)
         df_class = ls.compute_class_metrics_df(metrics=['number_of_patches'])
         num_fires = int(df_class['number_of_patches'].values[0]) if not df_class.empty else 0
 
