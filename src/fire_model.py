@@ -1,5 +1,6 @@
 import numpy as np
 import pylandstats as pls
+import matplotlib.pyplot as plt
 
 NON_FLAMMABLE = -1
 UNBURNT = 0
@@ -67,6 +68,32 @@ class FireModel:
     def get_grid(self):
         return self.grid
 
+    def add_linear_nonflammable(self, xidx=None, yidx=None):
+        """
+        Set cells to NON_FLAMMABLE along specified x or y coordinates.
+        xidx: list of x indices (columns) to set as non-flammable (vertical lines)
+        yidx: list of y indices (rows) to set as non-flammable (horizontal lines)
+        """
+        if xidx is not None:
+            for x in xidx:
+                self.grid[:, x] = NON_FLAMMABLE
+        if yidx is not None:
+            for y in yidx:
+                self.grid[y, :] = NON_FLAMMABLE
+        self.initial_grid = self.grid.copy()  # Update initial grid if needed
+
+    def show_initial_grid(self):
+        """
+        Display the initial landscape grid before simulation starts.
+        The plot window must be closed to continue.
+        """
+        plt.figure(figsize=(6, 6))
+        cmap = plt.cm.get_cmap('YlOrRd', 4)  # 4 discrete colors
+        plt.imshow(self.initial_grid, cmap=cmap, vmin=-1, vmax=2)
+        plt.title("Initial Landscape")
+        plt.axis('off')
+        plt.show()
+        
     # ---- Initial State Measures using pylandstats ----
     def calc_initial_measures(self):
         # Calculate initial flammable fraction and clusters efficiently
@@ -74,12 +101,17 @@ class FireModel:
         total_cells = self.initial_grid.size
         flammable_fraction = round(np.sum(flammable_mask) / total_cells if total_cells > 0 else 0.0, 4)
 
+        #print(flammable_mask)
+
         ls = pls.Landscape(flammable_mask, neighborhood_rule=4, res=(self.grid_res, self.grid_res), nodata=-99)
         df_class = ls.compute_class_metrics_df(metrics=['number_of_patches'])
-        num_clusters = int(df_class['number_of_patches'].values[0]) if not df_class.empty else 0
+        #print(df_class)
+        num_clusters = int(df_class.loc[1, 'number_of_patches']) if 1 in df_class.index else 0
+        #print(num_clusters)
         
         df_lsp = ls.compute_landscape_metrics_df(metrics=['contagion'])
-        contag = float(df_lsp['contagion'].values[0]) if not df_lsp.empty else 0.0
+        contag = float(df_lsp['contagion'].values[0]) if not df_lsp.empty else 0.0  #no need to specify row as this is for the entire landscape
+        
 
         return {
             "initial_flammable_fraction": flammable_fraction,

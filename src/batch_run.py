@@ -1,4 +1,5 @@
 import csv
+from xml.parsers.expat import model
 from fire_model import FireModel
 
 def run_batch(params_csv, results_csv):
@@ -23,6 +24,17 @@ def run_batch(params_csv, results_csv):
             float(params['rho'])
             )
             
+            x_lines = params.get('x_lines', '[]')
+            y_lines = params.get('y_lines', '[]')
+                
+            x_lines = [] if x_lines == '[]' else [int(x) for x in x_lines.strip('[]').split(',')]
+            y_lines = [] if y_lines == '[]' else [int(y) for y in y_lines.strip('[]').split(',')]
+
+            print(x_lines)
+            print(y_lines)
+            
+            model.add_linear_nonflammable(xidx=x_lines, yidx=y_lines)
+
             initial_measures = model.calc_initial_measures()
             
             #calculate number of fires
@@ -31,6 +43,7 @@ def run_batch(params_csv, results_csv):
             #print(fires_yr)
             #print(int(params['years']))
 
+            #model.show_initial_grid()   #use for testing
             model.run_simulation(int(params['years']), fires_yr)
 
             final_measures = model.calc_final_measures()
