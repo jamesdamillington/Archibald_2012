@@ -16,4 +16,16 @@ With *grid_size* == 100 and *grid_res* == 500, total area = 2500 km-2 which mean
 - mu 0.0020: 5 fires
 - mu 0.0400: 100 fires
 
-Results shown [here](results/fig2_faceted.png) match Fig 1 in Archibal _et al._ (2012)
+Results match Fig 1 in Archibald _et al._ (2012):
+![alt text](results/fig2_faceted.png)
+
+## Additions
+
+### Roads
+The `add_linear_nonflammable` function add 'roads' (linear rows of non-flammable cells) to introduce fuel discontinuities. This shows how the original Archibald *et al.* results can be modified. 
+
+- Adding _two_ roads to create _four_ equal size areas where vegetation can grow results in different relationships for low mu (ignition rate) but not otherwise:
+![alt text](results/fig2_grid101_cross.png)
+
+- Adding _four_ roads to create _nine_ equal size areas where vegetation can grow results in different relationships for low and intermediate mu (ignition rate) but not high:
+![alt text](results/fig2_grid101_fourlines.png)

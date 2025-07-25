@@ -4,7 +4,7 @@ from matplotlib.colors import Normalize
 import numpy as np
 
 # Load results
-df = pd.read_csv('../results/results_2025-07-22.csv')
+df = pd.read_csv('../results/results101_fourlines.csv', usecols=['mu', 'p_spread', 'rho', 'burned_fraction'])
 
 mu_to_fires = {0.0004: 1, 0.002: 5, 0.04: 100}
 mu_order = [0.0004, 0.002, 0.04]
@@ -51,7 +51,7 @@ handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[j]
 labels = [f'p_spread={p_spread}' for p_spread in spread_values]
 fig.legend(handles, labels, title='p_spread', loc='center left', bbox_to_anchor=(0.88, 0.5), borderaxespad=0., fontsize=14, title_fontsize=15)
 
-plt.suptitle('Fraction burned vs. flammable fraction\nFaceted by ignitions', fontsize=18)
+plt.suptitle('Fraction burned vs. flammable fraction (Faceted by ignitions)\nGrid Size 101, with four roads (nine patches)', fontsize=18)
 plt.tight_layout(rect=[0, 0, 0.88, 1])
-plt.savefig('../results/fig2_faceted.png', dpi=400, bbox_inches='tight')
+plt.savefig('../results/fig2_grid101_fourlines.png', dpi=400, bbox_inches='tight')
 plt.close()
