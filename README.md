@@ -20,6 +20,8 @@ With *grid_size* == 100 and *grid_res* == 500, total area = 2500 km-2 which mean
 Results match Fig 1 in Archibald _et al._ (2012):
 ![alt text](results/fig2_faceted.png)
 
+[v1.0](https://github.com/jamesdamillington/Archibald_2012/releases/tag/v1.0) is the state of the repo at the point of the first working 'vanilla' version of the Archibald _et al._ (2012) model (i.e. without any of the additions below).
+
 ## Additions
 
 ### Roads
