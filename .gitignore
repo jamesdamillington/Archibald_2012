@@ -8,7 +8,7 @@ __pycache__/
 
 #misc
 pdf/
-notes/
+notes/*.txt
 
 # Distribution / packaging
 .Python
